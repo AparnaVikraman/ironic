@@ -36,10 +36,11 @@ ilo_error = importutils.try_import('proliantutils.exception')
 BOOT_DEVICE_MAPPING_TO_ILO = {
     boot_devices.PXE: 'NETWORK',
     boot_devices.DISK: 'HDD',
-    boot_devices.CDROM: 'CDROM'
+    boot_devices.CDROM: 'CDROM',
+    boot_devices.UEFISHELL: 'UEFISHELL'
 }
 BOOT_DEVICE_ILO_TO_GENERIC = {
-    v: k for k, v in BOOT_DEVICE_MAPPING_TO_ILO.items()}
+    v: k for k, v in BOOT_DEVICE_MAPPING_TO_ILO.items()} 
 
 MANAGEMENT_PROPERTIES = ilo_common.REQUIRED_PROPERTIES.copy()
 MANAGEMENT_PROPERTIES.update(ilo_common.CLEAN_PROPERTIES)
@@ -211,7 +212,7 @@ class IloManagement(base.ManagementInterface):
                 ilo_object.update_persistent_boot([boot_device])
 
         except ilo_error.IloError as ilo_exception:
-            operation = _("Setting %s as boot device") % device
+            operation = _("Setting %s as boot device") % boot_devices.UEFISHELL
             raise exception.IloOperationError(operation=operation,
                                               error=ilo_exception)
 

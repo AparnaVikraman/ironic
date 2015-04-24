@@ -125,7 +125,7 @@ def _check_disk_layout_unchanged(node, i_info):
     for param in DISK_LAYOUT_PARAMS:
         param_value = int(driver_internal_info['instance'][param])
         if param_value != int(i_info[param]):
-            error_msg += (_(' Deployed value of %(param)s was %(param_value)s '
+            error_msg += (_('Deployed value of %(param)s was %(param_value)s '
                             'but requested value is %(request_value)s.') %
                           {'param': param, 'param_value': param_value,
                            'request_value': i_info[param]})
