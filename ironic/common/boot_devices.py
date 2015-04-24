@@ -40,3 +40,6 @@ BIOS = 'bios'
 
 SAFE = 'safe'
 "Boot from default Hard-drive, request Safe Mode"
+
+UEFISHELL='http'
+"Boot from HTTP boot"
