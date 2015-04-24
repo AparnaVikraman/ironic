@@ -21,6 +21,8 @@ from ironic.common import exception
 from ironic.common.i18n import _
 from ironic.drivers import base
 from ironic.drivers.modules import agent
+from ironic.drivers.modules import http
+from ironic.drivers.modules import iscsi_deploy as iscsi
 from ironic.drivers.modules.ilo import deploy
 from ironic.drivers.modules.ilo import inspect
 from ironic.drivers.modules.ilo import management
@@ -49,6 +51,30 @@ class IloVirtualMediaIscsiDriver(base.BaseDriver):
         self.management = management.IloManagement()
         self.vendor = deploy.VendorPassthru()
         self.inspect = inspect.IloInspect()
+
+class IloHTTPBootDriver(base.BaseDriver):
+    """IloDriver using IloClient interface.
+
+    This driver implements the `core` functionality using
+    :class:ironic.drivers.modules.ilo.power.IloPower for power management.
+    and
+    :class:ironic.drivers.modules.http.HTTPDeploy for deploy.
+    """
+
+    def __init__(self):
+        if not importutils.try_import('proliantutils'):
+            raise exception.DriverLoadError(
+                    driver=self.__class__.__name__,
+                    reason=_("Unable to import proliantutils library"))
+
+        self.power = power.IloPower()=
+        self.deploy = iscsi.ISCSIDeploy()
+        self.boot = http.HTTPBoot()
+        self.console = deploy.IloConsoleInterface()
+        self.management = management.IloManagement()
+        self.vendor = iscsi.VendorPassthru()
+        self.inspect = inspect.IloInspect()
+
 
 
 class IloVirtualMediaAgentDriver(base.BaseDriver):

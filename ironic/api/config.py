@@ -38,6 +38,7 @@ app = {
         # with old DIB ramdisks.
         '(?:/v1)?/nodes/[a-z0-9\-]+/vendor_passthru/pass_(?:deploy|'
         'bootloader_install)_info',
+        '/v1/drivers/[a-z_]*/vendor_passthru/lookup',
     ],
 }
 

@@ -165,12 +165,13 @@ def _get_pxe_ip_address_path(ip_address, hex_form):
     )
 
 
-def get_deploy_kr_info(node_uuid, driver_info):
+def get_deploy_kr_info(node_uuid, driver_info, root_dir = None):
     """Get href and tftp path for deploy kernel and ramdisk.
 
     Note: driver_info should be validated outside of this method.
     """
-    root_dir = get_root_dir()
+    if not root_dir:
+        root_dir = get_root_dir()
     image_info = {}
     for label in ('deploy_kernel', 'deploy_ramdisk'):
         image_info[label] = (

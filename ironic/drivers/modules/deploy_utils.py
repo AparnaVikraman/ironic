@@ -91,6 +91,9 @@ deploy_opts = [
                deprecated_group='agent',
                default=1,
                help=_('Number of iterations to be run for erasing devices.')),
+    cfg.StrOpt('pxe_append_params',
+               default='nofb nomodeset vga=normal console=ttyS0',
+               help=_('Pxe boot parameters')),
 ]
 CONF = cfg.CONF
 CONF.register_opts(deploy_opts, group='deploy')
@@ -401,6 +404,8 @@ def _replace_lines_in_file(path, regex_pattern, replacement):
 def _replace_root_uuid(path, root_uuid):
     root = 'UUID=%s' % root_uuid
     pattern = r'(\(\(|\{\{) ROOT (\)\)|\}\})'
+    pattern = r'ROOT'
+
     _replace_lines_in_file(path, pattern, root)
 
 
@@ -428,6 +433,24 @@ def _replace_disk_identifier(path, disk_identifier):
     pattern = r'(\(\(|\{\{) DISK_IDENTIFIER (\)\)|\}\})'
     _replace_lines_in_file(path, pattern, disk_identifier)
 
+def switch_http_config(path, root_uuid):
+    _replace_root_uuid(path, root_uuid)
+
+    pattern = '^set default=.*$'
+    boot_line = 'set default=boot'
+
+    _replace_lines_in_file(path, pattern, boot_line)
+
+def switch_http_boot_script(path, http_options): 
+    pattern = '^set -v DownloadFile2 .*$'
+    boot_line = 'set -v DownloadFile2 %s' % http_options['aki_path']
+
+    _replace_lines_in_file(path, pattern, boot_line)
+
+    pattern = '^set -v DownloadFile3 .*$'
+    boot_line = 'set -v DownloadFile3 %s' % http_options['ari_path']
+
+    _replace_lines_in_file(path, pattern, boot_line)
 
 def switch_pxe_config(path, root_uuid_or_disk_id, boot_mode,
                       is_whole_disk_image, trusted_boot=False):
@@ -458,7 +481,6 @@ def notify(address, port):
         s.send('done')
     finally:
         s.close()
-
 
 def get_dev(address, port, iqn, lun):
     """Returns a device path for given parameters."""
@@ -892,7 +914,6 @@ def fetch_images(ctx, cache, images_info, force_raw=True):
                       format
     :raises: InstanceDeployFailure if unable to find enough disk space
     """
-
     try:
         image_cache.clean_up_caches(ctx, cache.master_dir, images_info)
     except exception.InsufficientDiskSpace as e:
