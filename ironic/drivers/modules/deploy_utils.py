@@ -91,6 +91,11 @@ deploy_opts = [
                deprecated_group='agent',
                default=1,
                help=_('Number of iterations to be run for erasing devices.')),
+    cfg.StrOpt('pxe_append_params',
+               default='nofb nomodeset vga=normal console=ttyS0',
+               help=_('Pxe boot parameters'),
+               deprecated_name='pxe_append_parameters',
+               deprecated_group='pxe'),
 ]
 CONF = cfg.CONF
 CONF.register_opts(deploy_opts, group='deploy')
@@ -387,7 +392,7 @@ def block_uuid(dev):
     return out.strip()
 
 
-def _replace_lines_in_file(path, regex_pattern, replacement):
+def replace_lines_in_file(path, regex_pattern, replacement):
     with open(path) as f:
         lines = f.readlines()
 
@@ -398,10 +403,11 @@ def _replace_lines_in_file(path, regex_pattern, replacement):
             f.write(line)
 
 
-def _replace_root_uuid(path, root_uuid):
+def replace_root_uuid(path, root_uuid):
     root = 'UUID=%s' % root_uuid
     pattern = r'(\(\(|\{\{) ROOT (\)\)|\}\})'
-    _replace_lines_in_file(path, pattern, root)
+
+    replace_lines_in_file(path, pattern, root)
 
 
 def _replace_boot_line(path, boot_mode, is_whole_disk_image,
@@ -421,13 +427,12 @@ def _replace_boot_line(path, boot_mode, is_whole_disk_image,
         pattern = '^%s .*$' % pxe_cmd
         boot_line = '%s %s' % (pxe_cmd, boot_disk_type)
 
-    _replace_lines_in_file(path, pattern, boot_line)
+    replace_lines_in_file(path, pattern, boot_line)
 
 
 def _replace_disk_identifier(path, disk_identifier):
     pattern = r'(\(\(|\{\{) DISK_IDENTIFIER (\)\)|\}\})'
-    _replace_lines_in_file(path, pattern, disk_identifier)
-
+    replace_lines_in_file(path, pattern, disk_identifier)
 
 def switch_pxe_config(path, root_uuid_or_disk_id, boot_mode,
                       is_whole_disk_image, trusted_boot=False):
@@ -443,7 +448,7 @@ def switch_pxe_config(path, root_uuid_or_disk_id, boot_mode,
         have one or neither, but not both.
     """
     if not is_whole_disk_image:
-        _replace_root_uuid(path, root_uuid_or_disk_id)
+        replace_root_uuid(path, root_uuid_or_disk_id)
     else:
         _replace_disk_identifier(path, root_uuid_or_disk_id)
 
@@ -458,7 +463,6 @@ def notify(address, port):
         s.send('done')
     finally:
         s.close()
-
 
 def get_dev(address, port, iqn, lun):
     """Returns a device path for given parameters."""
@@ -892,7 +896,6 @@ def fetch_images(ctx, cache, images_info, force_raw=True):
                       format
     :raises: InstanceDeployFailure if unable to find enough disk space
     """
-
     try:
         image_cache.clean_up_caches(ctx, cache.master_dir, images_info)
     except exception.InsufficientDiskSpace as e:
@@ -951,6 +954,23 @@ def get_single_nic_with_vif_port_id(task):
         if port.extra.get('vif_port_id'):
             return port.address
 
+def parse_driver_info(node):
+    """Gets the driver specific Node deployment info.
+
+    This method validates whether the 'driver_info' property of the
+    supplied node contains the required information for this driver to
+    deploy images to the node.
+
+    :param node: a single Node.
+    :returns: A dict with the driver_info values.
+    :raises: MissingParameterValue
+    """
+    info = node.driver_info
+    d_info = {k: info.get(k) for k in ('deploy_kernel', 'deploy_ramdisk')}
+    error_msg = _("Cannot validate bootloader. Some parameters were"
+                  " missing in node's driver_info")
+    check_for_missing_params(d_info, error_msg)
+    return d_info
 
 def parse_instance_info_capabilities(node):
     """Parse the instance_info capabilities.
@@ -988,6 +1008,63 @@ def parse_instance_info_capabilities(node):
 
     return capabilities
 
+def get_instance_image_info(node, ctx, root_dir):
+    """Generate the paths for TFTP files for instance related images.
+
+    This method generates the paths for instance kernel and
+    instance ramdisk. This method also updates the node, so caller should
+    already have a non-shared lock on the node.
+
+    :param node: a node object
+    :param ctx: context
+    :returns: a dictionary whose keys are the names of the images (kernel,
+        ramdisk) and values are the absolute paths of them. If it's a whole
+        disk image, it returns an empty dictionary.
+    """
+    image_info = {}
+    if node.driver_internal_info.get('is_whole_disk_image'):
+        return image_info
+
+    i_info = node.instance_info
+    labels = ('kernel', 'ramdisk')
+    d_info = get_image_instance_info(node)
+    if not (i_info.get('kernel') and i_info.get('ramdisk')):
+        glance_service = image_service.GlanceImageService(version=1, context=ctx)
+        iproperties = glance_service.show(d_info['image_source'])['properties']
+        for label in labels:
+            i_info[label] = str(iproperties[label + '_id'])
+        node.instance_info = i_info
+        node.save()
+
+    for label in labels:
+        image_info[label] = (
+            i_info[label],
+            os.path.join(root_dir, node.uuid, label)
+        )
+
+    return image_info
+
+def validate_boot_option_for_uefi(node):
+    """In uefi boot mode, validate if the boot option is compatible.
+
+    This method raises exception if whole disk image being deployed
+    in UEFI boot mode without 'boot_option' being set to 'local'.
+
+    :param node: a single Node.
+    :raises: InvalidParameterValue
+    """
+    boot_mode = get_boot_mode_for_deploy(node)
+    boot_option = get_boot_option(node)
+    if (boot_mode == 'uefi' and
+            node.driver_internal_info.get('is_whole_disk_image') and
+            boot_option != 'local'):
+        LOG.error(_LE("Whole disk image with netboot is not supported in UEFI "
+                      "boot mode."))
+        raise exception.InvalidParameterValue(_(
+            "Conflict: Whole disk image being used for deploy, but "
+            "cannot be used with node %(node_uuid)s configured to use "
+            "UEFI boot with netboot option") %
+            {'node_uuid': node.uuid})
 
 def agent_get_clean_steps(task, interface=None, override_priorities=None):
     """Get the list of clean steps from the agent.

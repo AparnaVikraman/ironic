@@ -34,6 +34,7 @@ from ironic.drivers.modules import iboot
 from ironic.drivers.modules.ilo import inspect as ilo_inspect
 from ironic.drivers.modules.ilo import management as ilo_management
 from ironic.drivers.modules.ilo import power as ilo_power
+from ironic.drivers.modules import http
 from ironic.drivers.modules import inspector
 from ironic.drivers.modules import ipminative
 from ironic.drivers.modules import ipmitool
@@ -95,6 +96,16 @@ class FakePXEDriver(base.BaseDriver):
         self.boot = pxe.PXEBoot()
         self.deploy = iscsi_deploy.ISCSIDeploy()
         self.vendor = iscsi_deploy.VendorPassthru()
+
+class FakeHTTPDriver(base.BaseDriver):
+    """Example implementation of a Driver."""
+
+    def __init__(self):
+        self.power = fake.FakePower()
+        self.boot = http.HTTPBoot()
+        self.deploy = iscsi_deploy.ISCSIDeploy()
+        self.vendor = iscsi_deploy.VendorPassthru()
+
 
 
 class FakeSSHDriver(base.BaseDriver):

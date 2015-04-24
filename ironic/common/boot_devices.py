@@ -43,3 +43,7 @@ SAFE = 'safe'
 
 WANBOOT = 'wanboot'
 "Boot from Wide Area Network"
+
+UEFISHELL='http'
+"Boot from HTTP boot"
+
