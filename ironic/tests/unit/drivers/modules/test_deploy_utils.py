@@ -34,6 +34,7 @@ from testtools import matchers
 from ironic.common import boot_devices
 from ironic.common import disk_partitioner
 from ironic.common import exception
+from ironic.common.glance_service import base_image_service
 from ironic.common import image_service
 from ironic.common import images
 from ironic.common import keystone
@@ -1106,8 +1107,15 @@ class OtherFunctionTestCase(db_base.DbTestCase):
 
     def setUp(self):
         super(OtherFunctionTestCase, self).setUp()
+        n = {
+            'driver': 'fake_pxe',
+            'instance_info': db_utils.get_test_pxe_instance_info(),
+            'driver_info': db_utils.get_test_pxe_driver_info(),
+            'driver_internal_info': db_utils.get_test_pxe_driver_internal_info(),
+        }
+
         mgr_utils.mock_the_extension_manager(driver="fake_pxe")
-        self.node = obj_utils.create_test_node(self.context, driver='fake_pxe')
+        self.node = obj_utils.create_test_node(self.context, **n)
 
     def test_get_dev(self):
         expected = '/dev/disk/by-path/ip-1.2.3.4:5678-iscsi-iqn.fake-lun-9'
@@ -1247,6 +1255,7 @@ class OtherFunctionTestCase(db_base.DbTestCase):
     @mock.patch.object(base_image_service.BaseImageService, '_show',
                        autospec=True)
     def _test__get_instance_image_info(self, show_mock):
+        CONF = cfg.CONF
         root_id = CONF.pxe.tftp_root
         properties = {'properties': {u'kernel_id': u'instance_kernel_uuid',
                       u'ramdisk_id': u'instance_ramdisk_uuid'}}
@@ -1270,7 +1279,7 @@ class OtherFunctionTestCase(db_base.DbTestCase):
 
         # test with saved info
         show_mock.reset_mock()
-        image_info = utils.get_instance_image_info(self.node, self.context)
+        image_info = utils.get_instance_image_info(self.node, self.context, CONF.pxe.tftp_root)
         self.assertEqual(expected_info, image_info)
         self.assertFalse(show_mock.called)
         self.assertEqual('instance_kernel_uuid',
@@ -1295,9 +1304,50 @@ class OtherFunctionTestCase(db_base.DbTestCase):
         properties = {'properties': None}
         show_mock.return_value = properties
         self.node.driver_internal_info['is_whole_disk_image'] = True
-        image_info = utils.get_instance_image_info(self.node, self.context)
+        image_info = utils.get_instance_image_info(self.node, self.context, root_dir=None)
         self.assertEqual({}, image_info)
 
+    @mock.patch.object(utils.LOG, 'error', autospec=True)
+    def test_validate_boot_option_for_uefi_exc(self, mock_log):
+        properties = {'capabilities': 'boot_mode:uefi'}
+        instance_info = {"boot_option": "netboot"}
+        self.node.properties = properties
+        self.node.instance_info['capabilities'] = instance_info
+        self.node.driver_internal_info['is_whole_disk_image'] = True
+        self.assertRaises(exception.InvalidParameterValue,
+                          utils.validate_boot_option_for_uefi,
+                          self.node)
+        self.assertTrue(mock_log.called)
+
+    @mock.patch.object(utils.LOG, 'error', autospec=True)
+    def test_validate_boot_option_for_uefi_noexc_one(self, mock_log):
+        properties = {'capabilities': 'boot_mode:uefi'}
+        instance_info = {"boot_option": "local"}
+        self.node.properties = properties
+        self.node.instance_info['capabilities'] = instance_info
+        self.node.driver_internal_info['is_whole_disk_image'] = True
+        utils.validate_boot_option_for_uefi(self.node)
+        self.assertFalse(mock_log.called)
+
+    @mock.patch.object(utils.LOG, 'error', autospec=True)
+    def test_validate_boot_option_for_uefi_noexc_two(self, mock_log):
+        properties = {'capabilities': 'boot_mode:bios'}
+        instance_info = {"boot_option": "local"}
+        self.node.properties = properties
+        self.node.instance_info['capabilities'] = instance_info
+        self.node.driver_internal_info['is_whole_disk_image'] = True
+        utils.validate_boot_option_for_uefi(self.node)
+        self.assertFalse(mock_log.called)
+
+    @mock.patch.object(utils.LOG, 'error', autospec=True)
+    def test_validate_boot_option_for_uefi_noexc_three(self, mock_log):
+        properties = {'capabilities': 'boot_mode:uefi'}
+        instance_info = {"boot_option": "local"}
+        self.node.properties = properties
+        self.node.instance_info['capabilities'] = instance_info
+        self.node.driver_internal_info['is_whole_disk_image'] = False
+        utils.validate_boot_option_for_uefi(self.node)
+        self.assertFalse(mock_log.called)
 
 
 @mock.patch.object(disk_partitioner.DiskPartitioner, 'commit', lambda _: None)

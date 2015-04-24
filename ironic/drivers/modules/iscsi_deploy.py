@@ -48,7 +48,9 @@ LOG = logging.getLogger(__name__)
 pxe_opts = [
     cfg.StrOpt('kernel_cmdline_params',
                default='nofb nomodeset vga=normal',
-               help=_('Additional append parameters for baremetal PXE boot.')),
+               help=_('Additional kernel parameters for baremetal.'),
+               deprecated_name='pxe_append_parameters',
+               deprecated_group='pxe'),
     cfg.StrOpt('default_ephemeral_format',
                default='ext4',
                help=_('Default file system format for ephemeral partition, '
@@ -125,7 +127,7 @@ def _check_disk_layout_unchanged(node, i_info):
     for param in DISK_LAYOUT_PARAMS:
         param_value = int(driver_internal_info['instance'][param])
         if param_value != int(i_info[param]):
-            error_msg += (_(' Deployed value of %(param)s was %(param_value)s '
+            error_msg += (_('Deployed value of %(param)s was %(param_value)s '
                             'but requested value is %(request_value)s.') %
                           {'param': param, 'param_value': param_value,
                            'request_value': i_info[param]})

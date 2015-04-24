@@ -93,7 +93,9 @@ deploy_opts = [
                help=_('Number of iterations to be run for erasing devices.')),
     cfg.StrOpt('kernel_cmdline_params',
                default='nofb nomodeset vga=normal console=ttyS0',
-               help=_('Kernel boot parameters')),
+               help=_('Kernel boot parameters'),
+               deprecated_name='pxe_append_parameters',
+               deprecated_group='pxe'),
 ]
 CONF = cfg.CONF
 CONF.register_opts(deploy_opts, group='deploy')
@@ -390,7 +392,7 @@ def block_uuid(dev):
     return out.strip()
 
 
-def _replace_lines_in_file(path, regex_pattern, replacement):
+def replace_lines_in_file(path, regex_pattern, replacement):
     with open(path) as f:
         lines = f.readlines()
 
@@ -401,10 +403,11 @@ def _replace_lines_in_file(path, regex_pattern, replacement):
             f.write(line)
 
 
-def _replace_root_uuid(path, root_uuid):
+def replace_root_uuid(path, root_uuid):
     root = 'UUID=%s' % root_uuid
     pattern = r'(\(\(|\{\{) ROOT (\)\)|\}\})'
-    _replace_lines_in_file(path, pattern, root)
+
+    replace_lines_in_file(path, pattern, root)
 
 
 def _replace_boot_line(path, boot_mode, is_whole_disk_image,
@@ -424,13 +427,12 @@ def _replace_boot_line(path, boot_mode, is_whole_disk_image,
         pattern = '^%s .*$' % pxe_cmd
         boot_line = '%s %s' % (pxe_cmd, boot_disk_type)
 
-    _replace_lines_in_file(path, pattern, boot_line)
+    replace_lines_in_file(path, pattern, boot_line)
 
 
 def _replace_disk_identifier(path, disk_identifier):
     pattern = r'(\(\(|\{\{) DISK_IDENTIFIER (\)\)|\}\})'
-    _replace_lines_in_file(path, pattern, disk_identifier)
-
+    replace_lines_in_file(path, pattern, disk_identifier)
 
 def switch_pxe_config(path, root_uuid_or_disk_id, boot_mode,
                       is_whole_disk_image, trusted_boot=False):
@@ -446,7 +448,7 @@ def switch_pxe_config(path, root_uuid_or_disk_id, boot_mode,
         have one or neither, but not both.
     """
     if not is_whole_disk_image:
-        _replace_root_uuid(path, root_uuid_or_disk_id)
+        replace_root_uuid(path, root_uuid_or_disk_id)
     else:
         _replace_disk_identifier(path, root_uuid_or_disk_id)
 
@@ -461,7 +463,6 @@ def notify(address, port):
         s.send('done')
     finally:
         s.close()
-
 
 def get_dev(address, port, iqn, lun):
     """Returns a device path for given parameters."""
@@ -895,7 +896,6 @@ def fetch_images(ctx, cache, images_info, force_raw=True):
                       format
     :raises: InstanceDeployFailure if unable to find enough disk space
     """
-
     try:
         image_cache.clean_up_caches(ctx, cache.master_dir, images_info)
     except exception.InsufficientDiskSpace as e:
@@ -956,9 +956,11 @@ def get_single_nic_with_vif_port_id(task):
 
 def parse_driver_info(node):
     """Gets the driver specific Node deployment info.
+
     This method validates whether the 'driver_info' property of the
     supplied node contains the required information for this driver to
     deploy images to the node.
+
     :param node: a single Node.
     :returns: A dict with the driver_info values.
     :raises: MissingParameterValue
@@ -969,7 +971,6 @@ def parse_driver_info(node):
                   " missing in node's driver_info")
     check_for_missing_params(d_info, error_msg)
     return d_info
-
 
 def parse_instance_info_capabilities(node):
     """Parse the instance_info capabilities.
@@ -1012,6 +1013,7 @@ def get_instance_image_info(node, ctx, root_dir):
     This method generates the paths for instance kernel and
     instance ramdisk. This method also updates the node, so caller should
     already have a non-shared lock on the node.
+
     :param node: a node object
     :param ctx: context
     :param root_dir: root directory

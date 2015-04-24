@@ -1496,7 +1496,7 @@ class CleanUpFullFlowTestCase(db_base.DbTestCase):
         os.link(self.master_kernel_path, self.kernel_path)
         os.link(self.master_instance_path, self.image_path)
 
-    @mock.patch.object(pxe, '_get_instance_image_info', autospec=True)
+    @mock.patch.object(deploy_utils, 'get_instance_image_info', autospec=True)
     @mock.patch.object(pxe, '_get_deploy_image_info', autospec=True)
     def test_clean_up_with_master(self, mock_get_deploy_image_info,
                                   mock_get_instance_image_info):
@@ -1509,7 +1509,7 @@ class CleanUpFullFlowTestCase(db_base.DbTestCase):
                                   shared=True) as task:
             task.driver.deploy.clean_up(task)
             mock_get_instance_image_info.assert_called_with(task.node,
-                                                            task.context)
+                                                            task.context, CONF.pxe.tftp_root)
             mock_get_deploy_image_info.assert_called_with(task.node)
         for path in ([self.kernel_path, self.image_path, self.config_path]
                      + self.files):

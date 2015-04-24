@@ -62,7 +62,7 @@ class IloManagementTestCase(db_base.DbTestCase):
         with task_manager.acquire(self.context, self.node.uuid,
                                   shared=False) as task:
             expected = [boot_devices.PXE, boot_devices.DISK,
-                        boot_devices.CDROM]
+                        boot_devices.CDROM, boot_devices.UEFISHELL]
             self.assertEqual(
                 sorted(expected),
                 sorted(task.driver.management.
