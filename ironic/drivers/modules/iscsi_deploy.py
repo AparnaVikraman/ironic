@@ -46,7 +46,7 @@ LOG = logging.getLogger(__name__)
 # options twice is not recommended.  Hence we would move the parameters
 # to the appropriate place in the final refactoring.
 pxe_opts = [
-    cfg.StrOpt('pxe_append_params',
+    cfg.StrOpt('kernel_cmdline_params',
                default='nofb nomodeset vga=normal',
                help=_('Additional append parameters for baremetal PXE boot.')),
     cfg.StrOpt('default_ephemeral_format',

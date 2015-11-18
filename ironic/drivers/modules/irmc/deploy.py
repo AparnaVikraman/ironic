@@ -85,8 +85,8 @@ REQUIRED_PROPERTIES = {
 
 COMMON_PROPERTIES = REQUIRED_PROPERTIES
 
-CONF.import_opt('pxe_append_params', 'ironic.drivers.modules.iscsi_deploy',
-                group='pxe')
+CONF.import_opt('kernel_cmdline_params', 'ironic.drivers.modules.iscsi_deploy',
+                group='deploy')
 
 SUPPORTED_SHARE_TYPES = ('nfs', 'cifs')
 
@@ -295,7 +295,7 @@ def _prepare_boot_iso(task, root_uuid):
         deploy_iso = ('file://' + os.path.join(
             CONF.irmc.remote_image_share_root, deploy_iso_filename))
         boot_mode = deploy_utils.get_boot_mode_for_deploy(task.node)
-        kernel_params = CONF.pxe.pxe_append_params
+        kernel_params = CONF.deploy.kernel_cmdline_params
 
         boot_iso_filename = _get_boot_iso_name(task.node)
         boot_iso_fullpathname = os.path.join(

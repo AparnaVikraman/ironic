@@ -184,7 +184,7 @@ class PXEPrivateMethodsTestCase(db_base.DbTestCase):
     def _test_build_pxe_config_options(self, build_pxe_mock,
                                        whle_dsk_img=False,
                                        ipxe_enabled=False):
-        self.config(pxe_append_params='test_param', group='pxe')
+        self.config(kernel_cmdline_params='test_param', group='deploy')
         # NOTE: right '/' should be removed from url string
         self.config(api_url='http://192.168.122.184:6385', group='conductor')
         self.config(disk_devices='sda', group='pxe')
@@ -226,7 +226,7 @@ class PXEPrivateMethodsTestCase(db_base.DbTestCase):
         expected_options = {
             'ari_path': ramdisk,
             'deployment_ari_path': deploy_ramdisk,
-            'pxe_append_params': 'test_param',
+            'kernel_cmdline_params': 'test_param',
             'aki_path': kernel,
             'deployment_aki_path': deploy_kernel,
             'tftp_server': tftp_server,
@@ -272,7 +272,7 @@ class PXEPrivateMethodsTestCase(db_base.DbTestCase):
     def test__build_pxe_config_options_whole_disk_image(self,
                                                         build_pxe_mock,
                                                         ipxe_enabled=False):
-        self.config(pxe_append_params='test_param', group='pxe')
+        self.config(kernel_cmdline_params='test_param', group='deploy')
         # NOTE: right '/' should be removed from url string
         self.config(api_url='http://192.168.122.184:6385', group='conductor')
         self.config(disk_devices='sda', group='pxe')
@@ -298,7 +298,7 @@ class PXEPrivateMethodsTestCase(db_base.DbTestCase):
 
         expected_options = {
             'deployment_ari_path': deploy_ramdisk,
-            'pxe_append_params': 'test_param',
+            'kernel_cmdline_params': 'test_param',
             'deployment_aki_path': deploy_kernel,
             'tftp_server': tftp_server,
             'aki_path': 'no_kernel',
@@ -328,7 +328,7 @@ class PXEPrivateMethodsTestCase(db_base.DbTestCase):
         del self.node.driver_internal_info['is_whole_disk_image']
         self.node.save()
         self.config(group='pxe', tftp_server='my-tftp-server')
-        self.config(group='pxe', pxe_append_params='my-pxe-append-params')
+        self.config(group='pxe', kernel_cmdline_params='my-pxe-append-params')
         image_info = {
             'deploy_kernel': ('deploy_kernel',
                               'path-to-deploy_kernel'),
@@ -342,7 +342,7 @@ class PXEPrivateMethodsTestCase(db_base.DbTestCase):
         expected_options = {
             'deployment_aki_path': 'path-to-deploy_kernel',
             'deployment_ari_path': 'path-to-deploy_ramdisk',
-            'pxe_append_params': 'my-pxe-append-params',
+            'kernel_cmdline_params': 'my-pxe-append-params',
             'tftp_server': 'my-tftp-server',
             'aki_path': 'no_kernel',
             'ari_path': 'no_ramdisk'}

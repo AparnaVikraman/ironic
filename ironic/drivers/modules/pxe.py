@@ -114,7 +114,7 @@ def _get_pxe_conf_option(task, opt_name):
     the CONF option is not it's default value, it returns the value of
     CONF.agent.agent_<opt_name>.  Otherwise, it returns the value of
     CONF.pxe.<opt_name>.  There are only 2 such parameters right now -
-    pxe_config_template and pxe_append_params.  Caller
+    pxe_config_template and kernel_cmdline_params.  Caller
     has to make sure that only these 2 options are passed.
 
     :param task: TaskManager instance.
@@ -122,6 +122,8 @@ def _get_pxe_conf_option(task, opt_name):
     :returns: The value of the CONF option.
     :raises: AttributeError, if such a CONF option doesn't exist.
     """
+    import pdb
+    pdb.set_trace()
     if isinstance(task.driver.deploy, agent.AgentDeploy):
         agent_opt_name = 'agent_' + opt_name
         current_value = getattr(CONF.agent, agent_opt_name)
@@ -266,11 +268,13 @@ def _build_pxe_config_options(task, pxe_info):
                 kernel = pxe_info['kernel'][1]
             if 'ramdisk' in pxe_info:
                 ramdisk = pxe_info['ramdisk'][1]
-
+ 
+    import pdb
+    pdb.set_trace()
     pxe_options = {
         'deployment_aki_path': deploy_kernel,
         'deployment_ari_path': deploy_ramdisk,
-        'pxe_append_params': _get_pxe_conf_option(task, 'pxe_append_params'),
+        'kernel_cmdline_params': _get_pxe_conf_option(task, 'kernel_cmdline_params'),
         'tftp_server': CONF.pxe.tftp_server,
         'aki_path': kernel,
         'ari_path': ramdisk

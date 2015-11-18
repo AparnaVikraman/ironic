@@ -46,8 +46,8 @@ clean_opts = [
                       'disabled and will not run during cleaning.'))
 ]
 
-CONF.import_opt('pxe_append_params', 'ironic.drivers.modules.iscsi_deploy',
-                group='pxe')
+CONF.import_opt('kernel_cmdline_params', 'ironic.drivers.modules.iscsi_deploy',
+                group='deploy')
 CONF.import_opt('swift_ilo_container', 'ironic.drivers.modules.ilo.common',
                 group='ilo')
 CONF.register_opts(clean_opts, group='ilo')
