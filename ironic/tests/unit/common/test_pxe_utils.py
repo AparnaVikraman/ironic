@@ -40,7 +40,7 @@ class TestPXEUtils(db_base.DbTestCase):
                                    u'c02d7f33c123/deploy_kernel',
             'aki_path': u'/tftpboot/1be26c0b-03f2-4d2e-ae87-c02d7f33c123/'
                         u'kernel',
-            'pxe_append_params': 'test_param',
+            'kernel_cmdline_params': 'test_param',
             'deployment_ari_path': u'/tftpboot/1be26c0b-03f2-4d2e-ae87-c02d7'
                                    u'f33c123/deploy_ramdisk',
             'root_device': 'vendor=fake,size=123',

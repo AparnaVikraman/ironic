@@ -41,7 +41,7 @@ agent_opts = [
                help=_('DEPRECATED. Additional append parameters for '
                       'baremetal PXE boot. This option is deprecated and '
                       'will be removed in Mitaka release. Please use '
-                      '[pxe]pxe_append_params instead.')),
+                      '[deploy]kernel_cmdline_params instead.')),
     cfg.StrOpt('agent_pxe_config_template',
                default=paths.basedir_def(
                    'drivers/modules/agent_config.template'),

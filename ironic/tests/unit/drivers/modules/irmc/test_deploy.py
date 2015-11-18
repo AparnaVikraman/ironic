@@ -425,7 +425,7 @@ class IRMCDeployPrivateMethodsTestCase(db_base.DbTestCase):
                                          image_props_mock,
                                          boot_mode_mock,
                                          create_boot_iso_mock):
-        CONF.pxe.pxe_append_params = 'kernel-params'
+        CONF.deploy.kernel_cmdline_params = 'kernel-params'
 
         deploy_info_mock.return_value = {'image_source': 'image-uuid'}
         image_props_mock.return_value = {'kernel_id': 'kernel_uuid',

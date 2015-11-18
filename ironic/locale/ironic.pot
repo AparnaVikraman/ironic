@@ -1661,7 +1661,7 @@ msgstr ""
 msgid ""
 "DEPRECATED. Additional append parameters for baremetal PXE boot. This "
 "option is deprecated and will be removed in Mitaka release. Please use "
-"[pxe]pxe_append_params instead."
+"[deploy]kernel_cmdline_params instead."
 msgstr ""
 
 #: ironic/drivers/modules/agent.py:48

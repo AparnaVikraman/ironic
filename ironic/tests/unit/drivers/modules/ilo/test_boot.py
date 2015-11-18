@@ -167,7 +167,7 @@ class IloBootPrivateMethodsTestCase(db_base.DbTestCase):
                                   swift_api_mock,
                                   create_boot_iso_mock, tempfile_mock):
         CONF.ilo.swift_ilo_container = 'ilo-cont'
-        CONF.pxe.pxe_append_params = 'kernel-params'
+        CONF.deploy.kernel_cmdline_params = 'kernel-params'
 
         swift_obj_mock = swift_api_mock.return_value
         fileobj_mock = mock.MagicMock(spec=file)
@@ -228,7 +228,7 @@ class IloBootPrivateMethodsTestCase(db_base.DbTestCase):
         CONF.ilo.use_web_server_for_images = True
         CONF.deploy.http_url = "http://10.10.1.30/httpboot"
         CONF.deploy.http_root = "/httpboot"
-        CONF.pxe.pxe_append_params = 'kernel-params'
+        CONF.deploy.kernel_cmdline_params = 'kernel-params'
 
         fileobj_mock = mock.MagicMock(spec=file)
         fileobj_mock.name = 'tmpfile'

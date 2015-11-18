@@ -91,6 +91,9 @@ deploy_opts = [
                deprecated_group='agent',
                default=1,
                help=_('Number of iterations to be run for erasing devices.')),
+    cfg.StrOpt('kernel_cmdline_params',
+               default='nofb nomodeset vga=normal console=ttyS0',
+               help=_('Kernel boot parameters')),
 ]
 CONF = cfg.CONF
 CONF.register_opts(deploy_opts, group='deploy')

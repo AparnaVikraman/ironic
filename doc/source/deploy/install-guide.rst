@@ -1203,7 +1203,7 @@ The web console can be configured in Bare Metal service in the following way:
         [pxe]
 
         #Additional append parameters for bare metal PXE boot. (string value)
-        pxe_append_params = nofb nomodeset vga=normal console=tty0 console=ttyS0,115200n8
+        kernel_cmdline_params = nofb nomodeset vga=normal console=tty0 console=ttyS0,115200n8
 
    agent_* driver:
 
