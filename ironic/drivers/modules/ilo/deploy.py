@@ -33,7 +33,6 @@ from ironic.drivers.modules.ilo import boot as ilo_boot
 from ironic.drivers.modules.ilo import common as ilo_common
 from ironic.drivers.modules import ipmitool
 from ironic.drivers.modules import iscsi_deploy
-from ironic.drivers.modules import pxe
 
 LOG = logging.getLogger(__name__)
 
@@ -333,7 +332,7 @@ class IloPXEDeploy(iscsi_deploy.ISCSIDeploy):
             # Boot mode gets updated in prepare stage. It is possible that the
             # deploy boot mode is 'uefi' after call to update_boot_mode().
             # Hence a re-check is required here.
-            pxe.validate_boot_option_for_uefi(task.node)
+            deploy_utils.validate_boot_option_for_uefi(task.node)
 
         super(IloPXEDeploy, self).prepare(task)
 

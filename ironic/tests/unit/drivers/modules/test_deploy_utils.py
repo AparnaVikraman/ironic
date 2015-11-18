@@ -1227,6 +1227,78 @@ class OtherFunctionTestCase(db_base.DbTestCase):
         result = utils.get_boot_option(self.node)
         self.assertEqual("netboot", result)
 
+    def test_parse_driver_info_missing_deploy_kernel(self):
+        del self.node.driver_info['deploy_kernel']
+        self.assertRaises(exception.MissingParameterValue,
+                          utils.parse_driver_info, self.node)
+
+    def test_parse_driver_info_missing_deploy_ramdisk(self):
+        del self.node.driver_info['deploy_ramdisk']
+        self.assertRaises(exception.MissingParameterValue,
+                          utils.parse_driver_info, self.node)
+
+    def test_parse_driver_info(self):
+        expected_info = {'deploy_ramdisk': 'glance://deploy_ramdisk_uuid',
+                         'deploy_kernel': 'glance://deploy_kernel_uuid'}
+        image_info = utils.parse_driver_info(self.node)
+        self.assertEqual(expected_info, image_info)
+
+    
+    @mock.patch.object(base_image_service.BaseImageService, '_show',
+                       autospec=True)
+    def _test__get_instance_image_info(self, show_mock):
+        root_id = CONF.pxe.tftp_root
+        properties = {'properties': {u'kernel_id': u'instance_kernel_uuid',
+                      u'ramdisk_id': u'instance_ramdisk_uuid'}}
+
+        expected_info = {'ramdisk':
+                         ('instance_ramdisk_uuid',
+                          os.path.join(CONF.pxe.tftp_root,
+                                       self.node.uuid,
+                                       'ramdisk')),
+                         'kernel':
+                         ('instance_kernel_uuid',
+                          os.path.join(CONF.pxe.tftp_root,
+                                       self.node.uuid,
+                                       'kernel'))}
+        show_mock.return_value = properties
+        self.context.auth_token = 'fake'
+        image_info = utils.get_instance_image_info(self.node, self.context, CONF.pxe.tftp_root)
+        show_mock.assert_called_once_with(mock.ANY, 'glance://image_uuid',
+                                          method='get')
+        self.assertEqual(expected_info, image_info)
+
+        # test with saved info
+        show_mock.reset_mock()
+        image_info = utils.get_instance_image_info(self.node, self.context)
+        self.assertEqual(expected_info, image_info)
+        self.assertFalse(show_mock.called)
+        self.assertEqual('instance_kernel_uuid',
+                         self.node.instance_info.get('kernel'))
+        self.assertEqual('instance_ramdisk_uuid',
+                         self.node.instance_info.get('ramdisk'))
+
+    def test__get_instance_image_info(self):
+        # Tests when 'is_whole_disk_image' exists in driver_internal_info
+        self._test__get_instance_image_info()
+
+    def test__get_instance_image_info_without_is_whole_disk_image(self):
+        # Tests when 'is_whole_disk_image' doesn't exists in
+        # driver_internal_info
+        del self.node.driver_internal_info['is_whole_disk_image']
+        self.node.save()
+        self._test__get_instance_image_info()
+
+    @mock.patch.object(base_image_service.BaseImageService, '_show',
+                       autospec=True)
+    def test__get_instance_image_info_whole_disk_image(self, show_mock):
+        properties = {'properties': None}
+        show_mock.return_value = properties
+        self.node.driver_internal_info['is_whole_disk_image'] = True
+        image_info = utils.get_instance_image_info(self.node, self.context)
+        self.assertEqual({}, image_info)
+
+
 
 @mock.patch.object(disk_partitioner.DiskPartitioner, 'commit', lambda _: None)
 class WorkOnDiskTestCase(tests_base.TestCase):

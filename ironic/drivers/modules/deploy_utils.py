@@ -954,6 +954,22 @@ def get_single_nic_with_vif_port_id(task):
         if port.extra.get('vif_port_id'):
             return port.address
 
+def parse_driver_info(node):
+    """Gets the driver specific Node deployment info.
+    This method validates whether the 'driver_info' property of the
+    supplied node contains the required information for this driver to
+    deploy images to the node.
+    :param node: a single Node.
+    :returns: A dict with the driver_info values.
+    :raises: MissingParameterValue
+    """
+    info = node.driver_info
+    d_info = {k: info.get(k) for k in ('deploy_kernel', 'deploy_ramdisk')}
+    error_msg = _("Cannot validate bootloader. Some parameters were"
+                  " missing in node's driver_info")
+    check_for_missing_params(d_info, error_msg)
+    return d_info
+
 
 def parse_instance_info_capabilities(node):
     """Parse the instance_info capabilities.
@@ -991,6 +1007,62 @@ def parse_instance_info_capabilities(node):
 
     return capabilities
 
+def get_instance_image_info(node, ctx, root_dir):
+    """Generate the paths for the files for instance related images.
+    This method generates the paths for instance kernel and
+    instance ramdisk. This method also updates the node, so caller should
+    already have a non-shared lock on the node.
+    :param node: a node object
+    :param ctx: context
+    :param root_dir: root directory
+    :returns: a dictionary whose keys are the names of the images (kernel,
+        ramdisk) and values are the absolute paths of them. If it's a whole
+        disk image, it returns an empty dictionary.
+    """
+    image_info = {}
+    if node.driver_internal_info.get('is_whole_disk_image'):
+        return image_info
+
+    i_info = node.instance_info
+    labels = ('kernel', 'ramdisk')
+    d_info = get_image_instance_info(node)
+    if not (i_info.get('kernel') and i_info.get('ramdisk')):
+        glance_service = image_service.GlanceImageService(version=1, context=ctx)
+        iproperties = glance_service.show(d_info['image_source'])['properties']
+        for label in labels:
+            i_info[label] = str(iproperties[label + '_id'])
+        node.instance_info = i_info
+        node.save()
+
+    for label in labels:
+        image_info[label] = (
+            i_info[label],
+            os.path.join(root_dir, node.uuid, label)
+        )
+
+    return image_info
+
+def validate_boot_option_for_uefi(node):
+    """In uefi boot mode, validate if the boot option is compatible.
+
+    This method raises exception if whole disk image being deployed
+    in UEFI boot mode without 'boot_option' being set to 'local'.
+
+    :param node: a single Node.
+    :raises: InvalidParameterValue
+    """
+    boot_mode = get_boot_mode_for_deploy(node)
+    boot_option = get_boot_option(node)
+    if (boot_mode == 'uefi' and
+            node.driver_internal_info.get('is_whole_disk_image') and
+            boot_option != 'local'):
+        LOG.error(_LE("Whole disk image with netboot is not supported in UEFI "
+                      "boot mode."))
+        raise exception.InvalidParameterValue(_(
+            "Conflict: Whole disk image being used for deploy, but "
+            "cannot be used with node %(node_uuid)s configured to use "
+            "UEFI boot with netboot option") %
+            {'node_uuid': node.uuid})
 
 def agent_get_clean_steps(task, interface=None, override_priorities=None):
     """Get the list of clean steps from the agent.
