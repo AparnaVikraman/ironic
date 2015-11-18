@@ -87,22 +87,6 @@ class PXEPrivateMethodsTestCase(db_base.DbTestCase):
         self._test_get_pxe_conf_option('fake_agent',
                                        'my-agent-config-template')
 
-    def test__parse_driver_info_missing_deploy_kernel(self):
-        del self.node.driver_info['deploy_kernel']
-        self.assertRaises(exception.MissingParameterValue,
-                          pxe._parse_driver_info, self.node)
-
-    def test__parse_driver_info_missing_deploy_ramdisk(self):
-        del self.node.driver_info['deploy_ramdisk']
-        self.assertRaises(exception.MissingParameterValue,
-                          pxe._parse_driver_info, self.node)
-
-    def test__parse_driver_info(self):
-        expected_info = {'deploy_ramdisk': 'glance://deploy_ramdisk_uuid',
-                         'deploy_kernel': 'glance://deploy_kernel_uuid'}
-        image_info = pxe._parse_driver_info(self.node)
-        self.assertEqual(expected_info, image_info)
-
     def test__get_deploy_image_info(self):
         expected_info = {'deploy_ramdisk':
                          (DRV_INFO_DICT['deploy_ramdisk'],

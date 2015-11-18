@@ -146,64 +146,6 @@ def _get_pxe_conf_option(task, opt_name):
     # [pxe] group.
     return getattr(CONF.pxe, opt_name)
 
-
-def _parse_driver_info(node):
-    """Gets the driver specific Node deployment info.
-
-    This method validates whether the 'driver_info' property of the
-    supplied node contains the required information for this driver to
-    deploy images to the node.
-
-    :param node: a single Node.
-    :returns: A dict with the driver_info values.
-    :raises: MissingParameterValue
-    """
-    info = node.driver_info
-    d_info = {k: info.get(k) for k in ('deploy_kernel', 'deploy_ramdisk')}
-    error_msg = _("Cannot validate PXE bootloader. Some parameters were"
-                  " missing in node's driver_info")
-    deploy_utils.check_for_missing_params(d_info, error_msg)
-    return d_info
-
-
-def _get_instance_image_info(node, ctx):
-    """Generate the paths for TFTP files for instance related images.
-
-    This method generates the paths for instance kernel and
-    instance ramdisk. This method also updates the node, so caller should
-    already have a non-shared lock on the node.
-
-    :param node: a node object
-    :param ctx: context
-    :returns: a dictionary whose keys are the names of the images (kernel,
-        ramdisk) and values are the absolute paths of them. If it's a whole
-        disk image, it returns an empty dictionary.
-    """
-    image_info = {}
-    if node.driver_internal_info.get('is_whole_disk_image'):
-        return image_info
-
-    root_dir = pxe_utils.get_root_dir()
-    i_info = node.instance_info
-    labels = ('kernel', 'ramdisk')
-    d_info = deploy_utils.get_image_instance_info(node)
-    if not (i_info.get('kernel') and i_info.get('ramdisk')):
-        glance_service = service.GlanceImageService(version=1, context=ctx)
-        iproperties = glance_service.show(d_info['image_source'])['properties']
-        for label in labels:
-            i_info[label] = str(iproperties[label + '_id'])
-        node.instance_info = i_info
-        node.save()
-
-    for label in labels:
-        image_info[label] = (
-            i_info[label],
-            os.path.join(root_dir, node.uuid, label)
-        )
-
-    return image_info
-
-
 def _get_deploy_image_info(node):
     """Generate the paths for TFTP files for deploy images.
 
@@ -217,7 +159,7 @@ def _get_deploy_image_info(node):
     :raises: MissingParameterValue, if deploy_kernel/deploy_ramdisk is
         missing in node's driver_info.
     """
-    d_info = _parse_driver_info(node)
+    d_info = deploy_utils.parse_driver_info(node)
     return pxe_utils.get_deploy_kr_info(node.uuid, d_info)
 
 
@@ -277,30 +219,6 @@ def _build_pxe_config_options(task, pxe_info):
     }
 
     return pxe_options
-
-
-def validate_boot_option_for_uefi(node):
-    """In uefi boot mode, validate if the boot option is compatible.
-
-    This method raises exception if whole disk image being deployed
-    in UEFI boot mode without 'boot_option' being set to 'local'.
-
-    :param node: a single Node.
-    :raises: InvalidParameterValue
-    """
-    boot_mode = deploy_utils.get_boot_mode_for_deploy(node)
-    boot_option = deploy_utils.get_boot_option(node)
-    if (boot_mode == 'uefi' and
-            node.driver_internal_info.get('is_whole_disk_image') and
-            boot_option != 'local'):
-        LOG.error(_LE("Whole disk image with netboot is not supported in UEFI "
-                      "boot mode."))
-        raise exception.InvalidParameterValue(_(
-            "Conflict: Whole disk image being used for deploy, but "
-            "cannot be used with node %(node_uuid)s configured to use "
-            "UEFI boot with netboot option") %
-            {'node_uuid': node.uuid})
-
 
 def validate_boot_parameters_for_trusted_boot(node):
     """Check if boot parameters are valid for trusted boot."""
@@ -413,7 +331,7 @@ class PXEBoot(base.BootInterface):
                     {'node_uuid': node.uuid})
 
         if boot_mode == 'uefi':
-            validate_boot_option_for_uefi(node)
+            deploy_utils.validate_boot_option_for_uefi(node)
 
         # Check the trusted_boot capabilities value.
         deploy_utils.validate_capabilities(node)
@@ -422,7 +340,7 @@ class PXEBoot(base.BootInterface):
             # trusted boot.
             validate_boot_parameters_for_trusted_boot(node)
 
-        _parse_driver_info(node)
+        deploy_utils.parse_driver_info(node)
         d_info = deploy_utils.get_image_instance_info(node)
         if node.driver_internal_info.get('is_whole_disk_image'):
             props = []
@@ -470,7 +388,7 @@ class PXEBoot(base.BootInterface):
         # NODE: Try to validate and fetch instance images only
         # if we are in DEPLOYING state.
         if node.provision_state == states.DEPLOYING:
-            pxe_info.update(_get_instance_image_info(node, task.context))
+            pxe_info.update(deploy_utils.get_instance_image_info(node, task.context, pxe_utils.get_root_dir()))
 
         pxe_options = _build_pxe_config_options(task, pxe_info)
         pxe_options.update(ramdisk_params)
@@ -526,8 +444,8 @@ class PXEBoot(base.BootInterface):
         if boot_option != "local":
             # Make sure that the instance kernel/ramdisk is cached.
             # This is for the takeover scenario for active nodes.
-            instance_image_info = _get_instance_image_info(
-                task.node, task.context)
+            instance_image_info = deploy_utils.get_instance_image_info(
+                task.node, task.context, pxe_utils.get_root_dir())
             _cache_ramdisk_kernel(task.context, task.node, instance_image_info)
 
             # If it's going to PXE boot we need to update the DHCP server
@@ -585,7 +503,7 @@ class PXEBoot(base.BootInterface):
         """
         node = task.node
         try:
-            images_info = _get_instance_image_info(node, task.context)
+            images_info = deploy_utils.get_instance_image_info(node, task.context, pxe_utils.get_root_dir())
         except exception.MissingParameterValue as e:
             LOG.warning(_LW('Could not get instance image info '
                             'to clean up images for node %(node)s: %(err)s'),
