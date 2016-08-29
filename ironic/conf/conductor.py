@@ -129,6 +129,8 @@ opts = [
                       'ramdisk doing the cleaning. If the timeout is reached '
                       'the node will be put in the "clean failed" provision '
                       'state. Set to 0 to disable timeout.')),
+    cfg.DictOpt('clean_step_priority_overrides',
+                default={'deploy.erase_devices':10,'management.reset_bios_to_default':10})
 ]
 
 

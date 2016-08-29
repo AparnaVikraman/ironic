@@ -19,6 +19,7 @@ from ironic.common import exception
 from ironic.common.i18n import _, _LE, _LI, _LW
 from ironic.common import states
 from ironic.conductor import task_manager
+from ironic.conf import CONF
 
 LOG = log.getLogger(__name__)
 
@@ -309,14 +310,23 @@ def _get_cleaning_steps(task, enabled=False, sort=True):
         clean steps.
     :returns: A list of clean step dictionaries
     """
+    import pdb
+    pdb.set_trace()
     # Iterate interfaces and get clean steps from each
     steps = list()
-    for interface in CLEANING_INTERFACE_PRIORITY:
-        interface = getattr(task.driver, interface)
+    clean_step_priority = CONF.deploy.clean_step_priority_overrides
+    for interface_name in CLEANING_INTERFACE_PRIORITY:
+        interface = getattr(task.driver, interface_name)
+        #hell = interface.get_clean_steps(task, interface_name)
         if interface:
-            interface_steps = [x for x in interface.get_clean_steps(task)
+            interface_steps = [x for x in interface.get_clean_steps(task, interface_name)
                                if not enabled or x['priority'] > 0]
+            if not interface_steps:
+                interface_steps = [x for x in interface.get_clean_steps(task, interface_name)
+                                   if not enabled or x['priority'] > 0]
             steps.extend(interface_steps)
+    clean_step_priority = CONF.deploy.clean_step_priority_overrides
+    
     if sort:
         # Sort the steps from higher priority to lower priority
         steps = sorted(steps, key=_step_key, reverse=True)
@@ -341,7 +351,8 @@ def set_node_cleaning_steps(task):
     # For manual cleaning, the target provision state is MANAGEABLE, whereas
     # for automated cleaning, it is AVAILABLE.
     manual_clean = node.target_provision_state == states.MANAGEABLE
-
+    import pdb
+    pdb.set_trace()
     if not manual_clean:
         # Get the prioritized steps for automated cleaning
         driver_internal_info['clean_steps'] = _get_cleaning_steps(task,

@@ -27,6 +27,7 @@ opts = [
                default='/httpboot',
                help=_("ironic-conductor node's HTTP root path.")),
     cfg.IntOpt('erase_devices_priority',
+               deprecated_for_removal=True,
                help=_('Priority to run in-band erase devices via the Ironic '
                       'Python Agent ramdisk. If unset, will use the priority '
                       'set in the ramdisk (defaults to 10 for the '
@@ -67,8 +68,7 @@ opts = [
     cfg.BoolOpt('power_off_after_deploy_failure',
                 default=True,
                 help=_('Whether to power off a node after deploy failure. '
-                       'Defaults to True.')),
-]
+                       'Defaults to True.'))]
 
 
 def register_opts(conf):

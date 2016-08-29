@@ -204,6 +204,8 @@ class AgentClient(object):
 
     @METRICS.timer('AgentClient.get_clean_steps')
     def get_clean_steps(self, node, ports):
+        import pdb
+        pdb.set_trace()
         params = {
             'node': node.as_dict(),
             'ports': [port.as_dict() for port in ports]

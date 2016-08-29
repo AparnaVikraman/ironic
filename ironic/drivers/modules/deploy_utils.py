@@ -577,6 +577,8 @@ def agent_get_clean_steps(task, interface=None, override_priorities=None):
         cleaned yet.
     :returns: A list of clean step dictionaries
     """
+    import pdb
+    pdb.set_trace()
     node = task.node
     try:
         all_steps = node.driver_internal_info['agent_cached_clean_steps']

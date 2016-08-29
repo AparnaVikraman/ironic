@@ -786,6 +786,8 @@ class ConductorManager(base_manager.BaseConductorManager):
                             For more information, see the clean_steps parameter
                             of :func:`ConductorManager.do_node_clean`.
         """
+        import pdb
+        pdb.set_trace()
         node = task.node
         manual_clean = clean_steps is not None
         clean_type = 'manual' if manual_clean else 'automated'

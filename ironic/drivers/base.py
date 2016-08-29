@@ -30,6 +30,7 @@ import six
 
 from ironic.common import exception
 from ironic.common.i18n import _, _LE, _LW
+from ironic.conf import CONF
 from ironic.common import raid
 
 LOG = logging.getLogger(__name__)
@@ -209,7 +210,7 @@ class BaseInterface(object):
                    'interface': instance.interface_type})
         return instance
 
-    def get_clean_steps(self, task):
+    def get_clean_steps(self, task, interface):
         """Get a list of (enabled and disabled) clean steps for the interface.
 
         This function will return all clean steps (both enabled and disabled)
@@ -223,6 +224,17 @@ class BaseInterface(object):
             for the available clean steps.
         :returns: A list of clean step dictionaries
         """
+        import pdb
+        pdb.set_trace()
+        if not self.clean_steps:
+            clean_steps = CONF.deploy.clean_step_priority_overrides
+            info = task.node.driver_internal_info['agent_cached_clean_steps']
+            steps = [value for key, value in info.iteritems() if interface == key]
+            if steps:
+                for i in steps[0]:
+                    i['priority'] = CONF.deploy.clean_step_priority_overrides[i['step']]
+                    #elf.clean_steps.append(i) 
+                return steps[0]
         return self.clean_steps
 
     def execute_clean_step(self, task, step):

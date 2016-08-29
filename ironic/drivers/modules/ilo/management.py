@@ -216,7 +216,7 @@ class IloManagement(base.ManagementInterface):
         return ipmi_management.get_sensors_data(task)
 
     @METRICS.timer('IloManagement.reset_ilo')
-    @base.clean_step(priority=CONF.ilo.clean_priority_reset_ilo)
+    #@base.clean_step(priority=(int)(CONF.deploy.clean_step_priority_overrides['reset_ilo']['priority']))
     def reset_ilo(self, task):
         """Resets the iLO.
 
@@ -226,7 +226,7 @@ class IloManagement(base.ManagementInterface):
         return _execute_ilo_clean_step(task.node, 'reset_ilo')
 
     @METRICS.timer('IloManagement.reset_ilo_credential')
-    @base.clean_step(priority=CONF.ilo.clean_priority_reset_ilo_credential)
+    #@base.clean_step(priority=(int)(CONF.deploy.clean_step_priority_overrides['reset_ilo_credential']))
     def reset_ilo_credential(self, task):
         """Resets the iLO password.
 
@@ -249,7 +249,7 @@ class IloManagement(base.ManagementInterface):
         task.node.save()
 
     @METRICS.timer('IloManagement.reset_bios_to_default')
-    @base.clean_step(priority=CONF.ilo.clean_priority_reset_bios_to_default)
+    #@base.clean_step(priority=(int)(CONF.deploy.clean_step_priority_overrides['reset_bios_to_default']))
     def reset_bios_to_default(self, task):
         """Resets the BIOS settings to default values.
 
@@ -262,8 +262,7 @@ class IloManagement(base.ManagementInterface):
         return _execute_ilo_clean_step(task.node, 'reset_bios_to_default')
 
     @METRICS.timer('IloManagement.reset_secure_boot_keys_to_default')
-    @base.clean_step(priority=CONF.ilo.
-                     clean_priority_reset_secure_boot_keys_to_default)
+    #@base.clean_step(priority=(int)(CONF.deploy.clean_step_priority_overrides['reset_secure_boot_keys_to_default']))
     def reset_secure_boot_keys_to_default(self, task):
         """Reset secure boot keys to manufacturing defaults.
 
@@ -276,7 +275,7 @@ class IloManagement(base.ManagementInterface):
         return _execute_ilo_clean_step(task.node, 'reset_secure_boot_keys')
 
     @METRICS.timer('IloManagement.clear_secure_boot_keys')
-    @base.clean_step(priority=CONF.ilo.clean_priority_clear_secure_boot_keys)
+    #@base.clean_step(priority=(int)(CONF.deploy.clean_step_priority_overrides['clear_secure_boot_keys']))
     def clear_secure_boot_keys(self, task):
         """Clear all secure boot keys.
 

@@ -499,7 +499,7 @@ class AgentDeploy(AgentDeployMixin, base.DeployInterface):
         pass
 
     @METRICS.timer('AgentDeploy.get_clean_steps')
-    def get_clean_steps(self, task):
+    def get_clean_steps(self, task, interface):
         """Get the list of clean steps from the agent.
 
         :param task: a TaskManager object containing the node
@@ -508,14 +508,20 @@ class AgentDeploy(AgentDeployMixin, base.DeployInterface):
             enrolled and has not been cleaned yet.
         :returns: A list of clean step dictionaries
         """
-        new_priorities = {
-            'erase_devices': CONF.deploy.erase_devices_priority,
-            'erase_devices_metadata':
+        import pdb
+        pdb.set_trace()
+        if CONF.deploy.erase_devices_priority is not None:
+            new_priorities = {
+                'erase_devices': CONF.deploy.erase_devices_priority,
+                'erase_devices_metadata':
                 CONF.deploy.erase_devices_metadata_priority,
-        }
+            }
+        else:
+            new_priorities = CONF.deploy.clean_step_priority_overrides
+
         return deploy_utils.agent_get_clean_steps(
-            task, interface='deploy',
-            override_priorities=new_priorities)
+                task, interface=interface,
+                override_priorities=new_priorities)
 
     @METRICS.timer('AgentDeploy.execute_clean_step')
     def execute_clean_step(self, task, step):

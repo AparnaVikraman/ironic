@@ -290,7 +290,7 @@ class IloVirtualMediaAgentDeploy(agent.AgentDeploy):
         manager_utils.node_power_action(task, states.POWER_OFF)
         return super(IloVirtualMediaAgentDeploy, self).prepare_cleaning(task)
 
-    @METRICS.timer('IloVirtualMediaAgentDeploy.get_clean_steps')
+    '''@METRICS.timer('IloVirtualMediaAgentDeploy.get_clean_steps')
     def get_clean_steps(self, task):
         """Get the list of clean steps from the agent.
 
@@ -312,7 +312,7 @@ class IloVirtualMediaAgentDeploy(agent.AgentDeploy):
         }
         return deploy_utils.agent_get_clean_steps(
             task, interface='deploy',
-            override_priorities=new_priorities)
+            override_priorities=new_priorities)'''
 
 
 class IloPXEDeploy(iscsi_deploy.ISCSIDeploy):

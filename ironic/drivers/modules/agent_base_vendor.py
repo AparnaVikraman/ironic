@@ -267,6 +267,8 @@ class AgentDeployMixin(object):
                   'Previously cached steps: %(steps)s',
                   {'node': node.uuid, 'steps': previous_steps})
 
+        import pdb
+        pdb.set_trace()
         agent_result = self._client.get_clean_steps(node, task.ports).get(
             'command_result', {})
         missing = set(['clean_steps', 'hardware_manager_version']).difference(
@@ -783,6 +785,8 @@ class BaseAgentVendor(AgentDeployMixin, base.VendorInterface):
         :raises: NotFound if no matching node is found.
         :raises: InvalidParameterValue with unknown payload version
         """
+        import pdb
+        pdb.set_trace()
         LOG.warning(
             _LW('Agent lookup vendor passthru is deprecated and will be '
                 'removed in the Ocata release; please update your '
